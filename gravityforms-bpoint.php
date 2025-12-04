@@ -235,14 +235,14 @@ if (class_exists("GFForms")) {
                         RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                         error_log("Payment failed for entry ID: " . $entry['id'] . ". Reason: " . $response->TxnResp->ResponseText);
                         return '<strong style="color:red;">BPOINT payment declined. Reason: ' . $response->TxnResp->ResponseText . '</strong><br/><br/>' .
-                               '[gravityform id="' . $form['id'] . '" title="true" description="true"]';
+                               GFFormDisplay::get_form($form['id'], true, true, false, $entry);
                     }
                 }
             } else {
                 RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                 error_log("Payment failed for entry ID: " . $entry['id'] . ". No valid response received.");
                 return '<strong style="color:red;">BPOINT payment failed. Please try again.</strong><br/><br/>' .
-                       '[gravityform id="' . $form['id'] . '" title="true" description="true"]';
+                       GFFormDisplay::get_form($form['id'], true, true, false, $entry);
             }
 
             // Return confirmation message or redirect
