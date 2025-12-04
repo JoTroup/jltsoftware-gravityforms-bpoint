@@ -248,10 +248,22 @@ if (class_exists("GFForms")) {
             }
             
             // Prepare card details from $submission_data
-            $cardNumber      = rgar( $submission_data, 'card_number' );
-            $cVN             = rgar( $submission_data, 'cvn' );
-            $expiryDate      = rgar( $submission_data, 'expiry' );
-            $cardHolderName  = rgar( $submission_data, 'cardholder' );
+
+            $cardNumber   = isset($submission_data['card_number'])   ? $submission_data['card_number']   : '';
+            $cVN             = isset($submission_data['card_security_code'])   ? $submission_data['card_security_code']   : '';
+            if (isset($submission_data['card_expiration_date'])) {
+                $expiry_raw = $submission_data['card_expiration_date'];
+                if (is_array($expiry_raw) && count($expiry_raw) == 2) {
+                    $month = str_pad($expiry_raw[0], 2, '0', STR_PAD_LEFT);
+                    $year = substr($expiry_raw[1], -2);
+                    $expiryDate = $month . $year;
+                } else {
+                    $expiryDate = '';
+                }
+            } else {
+                $expiryDate = '';
+            }
+            $cardHolderName  = isset($submission_data['card_name'])   ? $submission_data['card_name']   : '';
         
             // Prepare BPOINT API
             $bpoint = new BPOINT_API($bpoint_username, $bpoint_password, $bpoint_merchantid, $gateway_url);
