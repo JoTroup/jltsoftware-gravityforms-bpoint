@@ -222,6 +222,17 @@ if (class_exists("GFForms")) {
             error_log("Authorize (preauth) process started for entry ID: " . $entry['id']);
             include_once('lib/BPOINT_API.php' );
 
+            global $wp;
+            if ($feed['bpoint_testmode'] == 'true') {
+                $gateway_url = 'https://www.bpoint.com.au/webapi/v2/';
+            } else {
+                $gateway_url = 'https://www.bpoint.com.au/webapi/v2/';
+            }
+
+            $bpoint_username = $feed['bpoint_username'];
+            $bpoint_password = $feed['bpoint_password'];
+            $bpoint_merchantid = $feed['bpoint_merchant_id'];
+
 
             // Prepare card details from $submission_data
             $cardNumber      = rgar( $submission_data, 'card_number' );
