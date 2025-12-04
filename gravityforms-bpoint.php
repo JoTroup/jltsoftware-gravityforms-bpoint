@@ -218,6 +218,11 @@ if (class_exists("GFForms")) {
 
 
         public function authorize( $feed, $submission_data, $form, $entry ) {
+            
+            error_log("Authorize (preauth) process started for entry ID: " . $entry['id']);
+            include_once('lib/BPOINT_API.php' );
+
+
             // Prepare card details from $submission_data
             $cardNumber      = rgar( $submission_data, 'card_number' );
             $cVN             = rgar( $submission_data, 'cvn' );
@@ -225,7 +230,7 @@ if (class_exists("GFForms")) {
             $cardHolderName  = rgar( $submission_data, 'cardholder' );
         
             // Prepare BPOINT API
-            $bpoint = new BPointAPI();
+            $bpoint = new BPOINT_API($bpoint_username, $bpoint_password, $bpoint_merchantid, $gateway_url);
             $bpoint->setType("preauth");
             $bpoint->setTestMode($feed['bpoint_testmode']);
             $bpoint->setStoreCard($feed['bpoint_storecard']);
