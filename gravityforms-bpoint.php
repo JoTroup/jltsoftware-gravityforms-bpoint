@@ -223,15 +223,19 @@ if (class_exists("GFForms")) {
             include_once('lib/BPOINT_API.php' );
             global $wp;
 
-            if ($feed['bpoint_testmode'] == 'true') {
+            $meta = isset($feed['meta']) ? $feed['meta'] : array();
+
+            if (isset($meta['bpoint_testmode']) && $meta['bpoint_testmode'] == 'true') {
                 $gateway_url = 'https://www.bpoint.com.au/webapi/v2/';
             } else {
                 $gateway_url = 'https://www.bpoint.com.au/webapi/v2/';
             }
 
-            $bpoint_username = $feed['bpoint_username'];
-            $bpoint_password = $feed['bpoint_password'];
-            $bpoint_merchantid = $feed['bpoint_merchant_id'];
+            $bpoint_username   = isset($meta['bpoint_username'])   ? $meta['bpoint_username']   : '';
+            $bpoint_password   = isset($meta['bpoint_password'])   ? $meta['bpoint_password']   : '';
+            $bpoint_merchantid = isset($meta['bpoint_merchant_id'])? $meta['bpoint_merchant_id']: '';
+            $bpoint_testmode   = isset($meta['bpoint_testmode'])   ? $meta['bpoint_testmode']   : 'false';
+            $bpoint_storecard  = isset($meta['bpoint_storecard'])  ? $meta['bpoint_storecard']  : 'false';
 
             if (!$bpoint_username || !$bpoint_password || !$bpoint_merchantid) {
                 error_log('BPOINT credentials missing in feed settings for form ID: ' . $form['id']);
