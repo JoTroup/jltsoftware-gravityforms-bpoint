@@ -140,9 +140,12 @@ if (class_exists("GFForms")) {
             $amount = GFCommon::get_order_total($form, $entry);
             $amount = number_format($amount * 100, 2, '.', '');
 
+            // checking $_POST Value
+            error_log('POST data: ' . print_r($_POST, true));
+
             $cc = $this->get_cc_fields($form['id']);
             error_log('get_cc_fields returned: ' . print_r($cc, true));
-
+            
             $cardNumber = $_POST["input_" . str_replace(".", "_", $cc["Card Number"])];
             $cVN = $_POST["input_" . str_replace(".", "_", $cc["Security Code"])];
             $card_expiration_date = $_POST["input_" . str_replace(array(".", "_month"), array("_", ""), $cc["Expiration Month"])];
