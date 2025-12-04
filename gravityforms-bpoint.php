@@ -236,10 +236,15 @@ if (class_exists("GFForms")) {
             $bpoint_username   = isset($meta['bpoint_username'])   ? $meta['bpoint_username']   : '';
             $bpoint_password   = isset($meta['bpoint_password'])   ? $meta['bpoint_password']   : '';
             $bpoint_merchantid = isset($meta['bpoint_merchant_id'])? $meta['bpoint_merchant_id']: '';
+            $bpoint_testmode   = isset($meta['bpoint_testmode'])   ? $meta['bpoint_testmode']   : 'false';
+            $bpoint_storecard  = isset($meta['bpoint_storecard'])  ? $meta['bpoint_storecard']  : 'false';
 
             if (!$bpoint_username || !$bpoint_password || !$bpoint_merchantid) {
                 error_log('BPOINT credentials missing in feed settings for form ID: ' . $form['id']);
                 error_log(print_r($feed, true));
+            } else {
+                error_log("BPOINT credentials found. Proceeding with authorization.");
+                error_log(print_r($submission_data, true));
             }
             
             // Prepare card details from $submission_data
@@ -251,8 +256,8 @@ if (class_exists("GFForms")) {
             // Prepare BPOINT API
             $bpoint = new BPOINT_API($bpoint_username, $bpoint_password, $bpoint_merchantid, $gateway_url);
             $bpoint->setType("preauth");
-            $bpoint->setTestMode($feed['bpoint_testmode']);
-            $bpoint->setStoreCard($feed['bpoint_storecard']);
+            $bpoint->setTestMode($bpoint_testmode);
+            $bpoint->setStoreCard($bpoint_storecard);
             $bpoint->setcardDetails($cardNumber, $cVN, $expiryDate, $cardHolderName);
             // Set other required fields (amount, CRN, etc.) from $submission_data or $entry as needed
         
