@@ -236,8 +236,6 @@ if (class_exists("GFForms")) {
             $bpoint_username   = isset($meta['bpoint_username'])   ? $meta['bpoint_username']   : '';
             $bpoint_password   = isset($meta['bpoint_password'])   ? $meta['bpoint_password']   : '';
             $bpoint_merchantid = isset($meta['bpoint_merchant_id'])? $meta['bpoint_merchant_id']: '';
-            $bpoint_testmode   = isset($meta['bpoint_testmode'])   ? $meta['bpoint_testmode']   : 'false';
-            $bpoint_storecard  = isset($meta['bpoint_storecard'])  ? $meta['bpoint_storecard']  : 'false';
 
             if (!$bpoint_username || !$bpoint_password || !$bpoint_merchantid) {
                 error_log('BPOINT credentials missing in feed settings for form ID: ' . $form['id']);
