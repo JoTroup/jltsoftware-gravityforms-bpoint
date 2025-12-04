@@ -28,7 +28,7 @@ if (class_exists("GFForms")) {
         public function init() {
             parent::init();
             error_log("GFBpoint plugin initialized.");
-            //add_filter("gform_confirmation", array("GFBpoint", "payBpoint"), 1000, 4);
+            add_filter("gform_confirmation", array("GFBpoint", "payBpoint"), 1000, 4);
         }
 
         public function init_frontend() {
