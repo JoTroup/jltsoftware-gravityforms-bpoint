@@ -225,6 +225,8 @@ if (class_exists("GFForms")) {
 
             $meta = isset($feed['meta']) ? $feed['meta'] : array();
 
+            error_log("Feed meta: " . print_r($meta, true));
+
             if (isset($meta['bpoint_testmode']) && $meta['bpoint_testmode'] == 'true') {
                 $gateway_url = 'https://www.bpoint.com.au/webapi/v2/';
             } else {
