@@ -205,101 +205,53 @@ if (class_exists("GFForms")) {
             error_log("Confirmation process started for entry ID: " . $entry['id']);
             $ajax = true;
             $feed = $this->get_feed_setting($form["id"]);
-            //updating lead's payment_status to Processing
+
+            // Updating lead's payment_status to Processing
             RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Processing');
             RGFormsModel::update_lead_property($entry["id"], "payment_date", date('Y-m-d'));
-            if (isset($form['confirmations']) && count($form['confirmations'])) {
-                foreach ($form['confirmations'] as $key => $value) {
-                    if ($value['isDefault'] == 1) {
-                        $message_confirm = $value['message'];
-                        if ($value['type'] == 'page') {
-                            $url_redirect = esc_url(get_permalink($value['pageId']));
-                        }
-                    }
-                }
-            }
-            //Ignored in the case Form unused Bpoint
+
             if (empty($feed)) {
-                if (!empty($url_redirect)) {
-                    $confirmation = array('redirect' => $url_redirect);
-                } else {
-                    $confirmation = $message_confirm;
-                }
+                error_log("No Bpoint feed found for form ID: " . $form['id']);
                 return $confirmation;
             }
-            
-            //Continute payment in case form use Bpoint
-            if ($feed['feed_condition_conditional_logic'] == 1 && is_array($feed['feed_condition_conditional_logic_object'])) {
-                $conditional_fieldId = $feed['feed_condition_conditional_logic_object']['conditionalLogic']['rules'][0]['fieldId'];
-                $conditional_value = $feed['feed_condition_conditional_logic_object']['conditionalLogic']['rules'][0]['value'];
-                if (isset($entry[$conditional_fieldId]) && $entry[$conditional_fieldId] == $conditional_value) {
-                    $response = $this->payBpoint($feed, $form, $entry);
+
+            // Process payment
+            $response = $this->payBpoint($feed, $form, $entry);
+
+            if (isset($response->APIResponse->ResponseCode) && $response->APIResponse->ResponseCode == 0) {
+                if ($feed['bpoint_storecard'] == 'dvtoken') {
+                    $trans_id = $response->DVTokenResp->DVToken;
+                    RGFormsModel::update_lead_property($entry["id"], "transaction_id", $trans_id);
+                    RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Saved Credit Card');
                 } else {
-                    if (!empty($url_redirect)) {
-                        $confirmation = array('redirect' => $url_redirect);
-                    } else {
-                        $confirmation = $message_confirm;
-                    }
-                    return $confirmation;
-                }
-            } else {
-                $response = $this->payBpoint($feed, $form, $entry);
-            }
-            if (isset($response->APIResponse->ResponseCode)) {
-                error_log("API Response Code: " . $response->APIResponse->ResponseCode);
-                if ($response->APIResponse->ResponseCode == 0) {
-                    if ($feed['bpoint_storecard'] == 'dvtoken') {
-                        $trans_id = $response->DVTokenResp->DVToken;
+                    if ($response->TxnResp->ResponseCode == "0") {
+                        $amount = $response->TxnResp->Amount / 100;
+                        $trans_id = $response->TxnResp->ReceiptNumber;
+                        RGFormsModel::update_lead_property($entry["id"], "payment_amount", $amount);
                         RGFormsModel::update_lead_property($entry["id"], "transaction_id", $trans_id);
-                        //RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Saved Credit Card');
-                        if (!empty($url_redirect)) {
-                            $confirmation = array('redirect' => $url_redirect);
-                        } else {
-                            $confirmation = $message_confirm;
-                        }
+                        RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Paid');
+                        error_log("Payment successful for entry ID: " . $entry['id']);
                     } else {
-                        if ($response->TxnResp->ResponseCode == "0") {
-                            $amount = $response->TxnResp->Amount / 100;
-                            $trans_id = $response->TxnResp->ReceiptNumber;
-                            RGFormsModel::update_lead_property($entry["id"], "payment_amount", $amount);
-                            RGFormsModel::update_lead_property($entry["id"], "transaction_id", $trans_id);
-                            RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Paid');
-                            $message = '<br/><br/><strong>Your transaction info:</strong><br/>';
-                            $message .= 'BPOINT Payment of $' . $amount . ' was successful. <br>';
-                            $message .= 'Transaction Id: ' . $trans_id . '<br/>';
-
-                            remove_filter('gform_disable_notification', 'fgc_disable_notification', 10);
-                            GFAPI::send_notifications($form, $entry, 'form_submission');
-
-                            if (!empty($url_redirect)) {
-                                $params = array('bpoint_return' => 1, 'payment_amount' => $amount, 'transaction_id' => $trans_id);
-                                $url_redirect = add_query_arg($params, $url_redirect);
-                                $confirmation = array('redirect' => $url_redirect);
-                            } else {
-                                $confirmation = $message_confirm . $message;
-                            }
-                        } else {
-                            RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
-                            $message = $response->TxnResp->ResponseText;
-                            $confirmation = $message_confirm . '<br/><br/><strong style="color:red;">BPOINT payment declined. Decline reason: ' . $message . '</strong><br/>';
-                            $confirmation .= '[gravityform id="' . $form['id'] . '" title="true" description="false"]';
-                        }
+                        RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
+                        error_log("Payment failed for entry ID: " . $entry['id'] . ". Reason: " . $response->TxnResp->ResponseText);
+                        return '<strong style="color:red;">BPOINT payment declined. Reason: ' . $response->TxnResp->ResponseText . '</strong>';
                     }
-                } else {
-                    //remove_filter('gform_disable_notification', 'fgc_disable_notification', 10);
-                    //GFAPI::send_notifications($form, $entry, 'form_submission');
-                    $message = $response->APIResponse->ResponseText;
-                    $confirmation = $message_confirm . '<br/><br/><strong style="color:red;">BPOINT payment declined. Decline reason: ' . $message . '</strong><br/>';
-                    $confirmation .= '[gravityform id="' . $form['id'] . '" title="true" description="false"]';
-                    RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                 }
             } else {
-                error_log("No API Response Code received.");
                 RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
-                $message = 'This order is not processed via BPOINT.';
-                $confirmation = $message_confirm . '<br/><br/><strong style="color:red;">BPOINT payment declined. Decline reason: ' . $message . '</strong><br/>';
-                $confirmation .= '[gravityform id="' . $form['id'] . '" title="true" description="false"]';
+                error_log("Payment failed for entry ID: " . $entry['id'] . ". No valid response received.");
+                return '<strong style="color:red;">BPOINT payment failed. Please try again.</strong>';
             }
+
+            // Return confirmation message or redirect
+            if (!empty($form['confirmations'])) {
+                foreach ($form['confirmations'] as $confirmation_setting) {
+                    if ($confirmation_setting['isDefault']) {
+                        return $confirmation_setting['message'];
+                    }
+                }
+            }
+
             return $confirmation;
         }
 
