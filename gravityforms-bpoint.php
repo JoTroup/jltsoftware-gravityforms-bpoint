@@ -141,6 +141,8 @@ if (class_exists("GFForms")) {
             $amount = number_format($amount * 100, 2, '.', '');
 
             $cc = $this->get_cc_fields($form['id']);
+            error_log('get_cc_fields returned: ' . print_r($cc, true));
+
             $cardNumber = $_POST["input_" . str_replace(".", "_", $cc["Card Number"])];
             $cVN = $_POST["input_" . str_replace(".", "_", $cc["Security Code"])];
             $card_expiration_date = $_POST["input_" . str_replace(array(".", "_month"), array("_", ""), $cc["Expiration Month"])];
