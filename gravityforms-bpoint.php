@@ -219,7 +219,7 @@ if (class_exists("GFForms")) {
 
         public function authorize( $feed, $submission_data, $form, $entry ) {
             
-            error_log("Authorize (preauth) process started for entry ID: " . $entry['id']);
+            error_log("Authorize (preauth) process started with feed: " . print_r($feed, true) . " for entry ID: " . $entry['id']);
             include_once('lib/BPOINT_API.php' );
             global $wp;
 
