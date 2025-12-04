@@ -10,6 +10,19 @@
   Date: 4 Dec 2025
  */
 
+
+ add_filter('gform_pre_render', function($form) {
+    if (isset($_POST['entry_id'])) {
+        $entry = GFAPI::get_entry($_POST['entry_id']);
+        foreach ($form['fields'] as &$field) {
+            if (isset($entry[$field->id])) {
+                $field->defaultValue = $entry[$field->id];
+            }
+        }
+    }
+    return $form;
+});
+
 if (class_exists("GFForms")) {
     GFForms::include_payment_addon_framework();
 
@@ -234,15 +247,17 @@ if (class_exists("GFForms")) {
                     } else {
                         RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                         error_log("Payment failed for entry ID: " . $entry['id'] . ". Reason: " . $response->TxnResp->ResponseText);
-                        return '<strong style="color:red;">BPOINT payment declined. Reason: ' . $response->TxnResp->ResponseText . '</strong><br/><br/>' .
-                               GFFormDisplay::get_form($form['id'], true, true, false, $entry);
+                        return '<strong style="color:red;">BPOINT payment declined. Reason: ' . esc_html($response->TxnResp->ResponseText) . '</strong><br/><br/>' .
+                            '<input type="hidden" name="entry_id" value="' . esc_attr($entry['id']) . '">' .
+                            GFFormDisplay::get_form($form['id'], true, true, false, $entry);
                     }
                 }
             } else {
                 RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                 error_log("Payment failed for entry ID: " . $entry['id'] . ". No valid response received.");
-                return '<strong style="color:red;">BPOINT payment failed. Please try again.</strong><br/><br/>' .
-                       GFFormDisplay::get_form($form['id'], true, true, false, $entry);
+                return '<strong style="color:red;">BPOINT payment declined. Reason: ' . esc_html($response->TxnResp->ResponseText) . '</strong><br/><br/>' .
+                    '<input type="hidden" name="entry_id" value="' . esc_attr($entry['id']) . '">' .
+                    GFFormDisplay::get_form($form['id'], true, true, false, $entry);
             }
 
             // Return confirmation message or redirect
