@@ -1,13 +1,13 @@
 <?php
 
 /*
-  Plugin Name: Gravity Forms Bpoint payment plugin
+  Plugin Name: GravityForms Bpoint Addon
   Plugin URI: http://www.gravityforms.com
   Description: Bpoint payment extension for Gravity Forms
-  Version: 1.1
-  Author: SydneyEcommerce
-  Author URI: http://sydneyecommerce.com.au
-  Date: 12 Aug 2016
+  Version: 1.0.1
+  Author: Josiah Troup
+  Author URI: 
+  Date: 4 Dec 2025
  */
 
 if (class_exists("GFForms")) {
@@ -20,20 +20,24 @@ if (class_exists("GFForms")) {
         protected $_slug = 'bpoint';
         protected $_path = 'gravityforms-bpoint/gravityforms-bpoint.php';
         protected $_full_path = __FILE__;
-        protected $_title = 'Gravity Forms Bpoint';
+        protected $_title = 'GravityForms Bpoint Addon';
         protected $_short_title = 'Bpoint';
         protected $_supports_callbacks = true;
         protected $_requires_credit_card = true;
 
         public function init() {
             parent::init();
+            error_log("GFBpoint plugin initialized.");
             //add_filter("gform_confirmation", array("GFBpoint", "payBpoint"), 1000, 4);
         }
 
         public function init_frontend() {
             parent::init_frontend();
-            if (isset($_GET['bpoint_return']) && $_GET['bpoint_return'] == 1)
+            error_log("GFBpoint frontend initialized.");
+            if (isset($_GET['bpoint_return']) && $_GET['bpoint_return'] == 1) {
+                error_log("Bpoint return detected in frontend.");
                 add_filter('the_content', array($this, 'result_page'), 20);
+            }
         }
 
         /**
@@ -121,8 +125,7 @@ if (class_exists("GFForms")) {
         }
 
         public function payBpoint($feed, $form, $entry) {
-//            echo '<pre>';
-//            print_r($feed);
+            error_log("Processing Bpoint payment for entry ID: " . $entry['id']);
             include_once('lib/BPOINT_API.php' );
             global $wp;
             if ($feed['bpoint_testmode'] == 'true') {
@@ -155,6 +158,7 @@ if (class_exists("GFForms")) {
                 $crn1 = 'No provided';
             }
             $bpoint = new BPOINT_API($bpoint_username, $bpoint_password, $bpoint_merchantid, $gateway_url);
+            error_log("BPOINT_API initialized with gateway URL: " . $gateway_url);
             if ($feed['bpoint_storecard'] != 'dvtoken') {
                 $bpoint->setAction($feed['bpoint_action']);
                 $bpoint->setAmount($amount);
@@ -170,6 +174,7 @@ if (class_exists("GFForms")) {
                 $bpoint->setStoreCard($feed['bpoint_storecard']);
                 $bpoint->setcardDetails($cardNumber, $cVN, $expiryDate, $cardHolderName);
                 $response = $bpoint->processTransaction();
+                error_log("Transaction response: " . print_r($response, true));
             } else {
                 $email_customer = $_POST["input_" . $feed['billingInformation_email']];
                 $bpoint->setCrn1($crn1);
@@ -178,11 +183,13 @@ if (class_exists("GFForms")) {
                 $bpoint->setEmailAddress($email_customer);
                 $bpoint->setcardDetails($cardNumber, $cVN, $expiryDate, $cardHolderName);
                 $response = $bpoint->processDVToken();
+                error_log("DVToken response: " . print_r($response, true));
             }
             return $response;
         }
 
         public function confirmation($confirmation, $form, $entry, $ajax) {
+            error_log("Confirmation process started for entry ID: " . $entry['id']);
             $ajax = true;
             $feed = $this->get_feed_setting($form["id"]);
             //updating lead's payment_status to Processing
@@ -226,6 +233,7 @@ if (class_exists("GFForms")) {
                 $response = $this->payBpoint($feed, $form, $entry);
             }
             if (isset($response->APIResponse->ResponseCode)) {
+                error_log("API Response Code: " . $response->APIResponse->ResponseCode);
                 if ($response->APIResponse->ResponseCode == 0) {
                     if ($feed['bpoint_storecard'] == 'dvtoken') {
                         $trans_id = $response->DVTokenResp->DVToken;
@@ -273,6 +281,7 @@ if (class_exists("GFForms")) {
                     RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                 }
             } else {
+                error_log("No API Response Code received.");
                 RGFormsModel::update_lead_property($entry["id"], "payment_status", 'Failed');
                 $message = 'This order is not processed via BPOINT.';
                 $confirmation = $message_confirm . '<br/><br/><strong style="color:red;">BPOINT payment declined. Decline reason: ' . $message . '</strong><br/>';
@@ -282,6 +291,7 @@ if (class_exists("GFForms")) {
         }
 
         public function get_cc_fields($form_id) {
+            error_log("Fetching credit card fields for form ID: " . $form_id);
             $result = array();
             $destForm = RGFormsModel::get_form_meta($form_id, true);
             foreach ($destForm['fields'] as $row) {
@@ -296,6 +306,7 @@ if (class_exists("GFForms")) {
         }
 
         public function get_email_fields($form_id) {
+            error_log("Fetching email fields for form ID: " . $form_id);
             $result = array();
             $destForm = RGFormsModel::get_form_meta($form_id, true);
             foreach ($destForm['fields'] as $row) {
@@ -308,6 +319,7 @@ if (class_exists("GFForms")) {
         }
 
         public function get_feed_setting($form_id) {
+            error_log("Fetching feed settings for form ID: " . $form_id);
             $feeds = $this->get_feeds($form_id);
             $setting = array();
             for ($i = 0; $i < count($feeds); $i++) {
@@ -318,6 +330,7 @@ if (class_exists("GFForms")) {
         }
 
         public function result_page() {
+            error_log("Result page accessed.");
             if (isset($_GET['bpoint_return']) && $_GET['bpoint_return'] == 1) {
                 $message = '<br/><br/><strong>Your transaction info:</strong><br/>';
                 $message .= 'BPOINT Payment of $' . $_GET['payment_amount'] / 100 . ' was successful. <br>';
@@ -335,6 +348,7 @@ if (class_exists("GFForms")) {
 add_action('gform_payment_details', 'fgc_payment_details', 9, 2);
 
 function fgc_payment_details($form, $entry) {
+    error_log("Displaying payment details for entry ID: " . $entry['id']);
     $payment_gateway = gform_get_meta($entry['id'], 'payment_gateway');
     if ($payment_gateway == 'bpoint') {
         echo 'CRN1:' . $entry['id'];
@@ -347,6 +361,7 @@ function fgc_disable_notification( $is_disabled, $notification, $form, $entry ) 
     if(isset($GFBpoint)) {
         $feed = $GFBpoint->get_feed_setting($form['id']);
         if(isset($feed['bpoint_username'])) {
+            error_log("Notification disabled for form ID: " . $form['id']);
             $is_disabled = true;
         }
     }
