@@ -145,9 +145,17 @@ if (class_exists("GFForms")) {
 
             $cc = $this->get_cc_fields($form['id']);
             error_log('get_cc_fields returned: ' . print_r($cc, true));
-            
+
+
+            error_log('Processing credit card details from POST data.');
+
+            error_log('Card Number Field ID: ' . str_replace(".", "_", $cc["Card Number"]));
             $cardNumber = $_POST["input_" . str_replace(".", "_", $cc["Card Number"])];
+
+            error_log('Security Code Field ID: ' . str_replace(".", "_", $cc["Security Code"]));
             $cVN = $_POST["input_" . str_replace(".", "_", $cc["Security Code"])];
+
+            error_log('Expiration Month Field ID: ' . str_replace(array(".", "_month"), array("_", ""), $cc["Expiration Month"]));
             $card_expiration_date = $_POST["input_" . str_replace(array(".", "_month"), array("_", ""), $cc["Expiration Month"])];
             if ($card_expiration_date[0] < 10) {
                 $month_card_expiration = '0' . $card_expiration_date[0];
